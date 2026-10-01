@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HTML Trace It</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#18212b}
+header{background:#17212b;color:#fff;padding:16px 22px}
+header h1{margin:0;font-size:24px}
+.task{background:#fff;padding:14px 22px;border-bottom:1px solid #d8dee5;display:flex;align-items:center;gap:18px}
+.tasktext{flex:1;font-size:27px}.tasktext strong{color:#2563eb;display:block;margin-bottom:5px}
+.tasktext small{display:block;color:#66717d;margin-top:8px}
+.targetbox{width:350px;height:185px;border:1px solid #aeb8c2;border-radius:5px;background:#fff;overflow:hidden;flex-shrink:0;box-shadow:0 1px 3px #0001}
+.targetbox iframe{width:700px;height:370px;border:0;transform:scale(.5);transform-origin:top left}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;min-height:455px}
+.panel{background:#fff;border:1px solid #d8dee5;border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.panel h2{font-size:15px;margin:0;padding:11px 14px;border-bottom:1px solid #d8dee5}
+textarea{flex:1;min-height:315px;width:100%;resize:none;border:0;padding:16px;font:15px/1.5 Consolas,monospace;outline:0;background:#101820;color:#eee;tab-size:2}
+.preview{flex:1;min-height:315px;width:100%;border:0;background:#fff}
+.toolbar{display:flex;gap:8px;padding:9px;border-top:1px solid #d8dee5}
+button{border:0;border-radius:6px;padding:9px 14px;font-weight:600;cursor:pointer}
+.run{background:#2563eb;color:#fff}.reset{background:#e5e7eb}.check{background:#16a34a;color:#fff;margin-left:auto}
+.feedback{padding:10px 14px;border-top:1px solid #d8dee5;min-height:42px}.good{color:#15803d}.bad{color:#b91c1c}.muted{color:#66717d}
+.reveal-wrap{border-top:1px solid #d8dee5;background:#f8fafc;padding:9px}
+.reveal{width:100%;background:#6b7280;color:#fff}
+.reveal:active{background:#4b5563}
+.target-reveal{width:350px;margin-top:7px;background:#6b7280;color:#fff}
+.target-reveal:active{background:#4b5563}
+.target-code{display:none;width:350px;max-height:150px;overflow:auto;margin:7px 0 0;padding:9px;background:#101820;color:#dbe7f0;border-radius:5px;font:11px/1.4 Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.revealed-code{display:none;margin:8px 0 0;padding:12px;max-height:190px;overflow:auto;background:#101820;color:#dbe7f0;border-radius:5px;font:13px/1.45 Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+@media(max-width:800px){.task{align-items:flex-start}.tasktext{font-size:20px}.targetbox{width:220px;height:120px}.targetbox iframe{transform:scale(.46)}.layout{grid-template-columns:1fr;padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>HTML Trace It</h1></header>
+
+<div class="task">
+  <div class="tasktext">
+    <strong id="num">Task 1 of 20</strong>
+    <div id="task"></div>
+    <small>Recreate the target using HTML. The small window is the target appearance — no starter code is provided.</small>
+  </div>
+  <div>
+  <div class="targetbox"><iframe id="target" sandbox></iframe></div>
+  <button id="targetRevealBtn" class="target-reveal" type="button">Hold to reveal target HTML</button>
+  <pre id="targetCode" class="target-code"></pre>
+</div>
+</div>
+
+<div class="layout">
+<section class="panel">
+  <h2>Your HTML</h2>
+  <textarea id="editor" spellcheck="false" placeholder="Type your HTML here..."></textarea>
+  <div class="toolbar">
+    <button class="run" onclick="run()">Run HTML</button>
+    <button class="reset" onclick="resetCode()">Reset</button>
+    <button class="check" onclick="check()">Check</button>
+  </div>
+  <div id="feedback" class="feedback muted">Type your HTML and click Run HTML to see the result.</div>
+</section>
+
+<section class="panel">
+  <h2>Live result</h2>
+  <iframe id="preview" class="preview" sandbox="allow-scripts"></iframe>
+  <div class="reveal-wrap">
+    <button id="revealBtn" class="reveal" type="button">Hold to reveal HTML</button>
+    <pre id="revealedCode" class="revealed-code"></pre>
+  </div>
+</section>
+</div>
+
+<script>
+/*
+  Target examples are themselves HTML documents.
+  The student's result is checked by inspecting the rendered DOM in
+  the preview iframe rather than requiring an exact source-code string.
+*/
+
+const tasks = [
+  {
+    q:"Create the labelled text input shown. The label must be correctly associated with the input using for and id.",
+    target:'<form><label for="student">Student name</label><input id="student" type="text"></form>',
+    check:d=>{let l=d.querySelector("label"),x=d.querySelector("input");return !!l&&!!x&&l.textContent.trim()==="Student name"&&l.htmlFor==="student"&&x.id==="student"&&x.type==="text"}
+  },
+  {
+    q:"Create the email input shown. It must use the email input type and have the placeholder shown.",
+    target:'<form><label for="email">Email</label><input id="email" type="email" placeholder="Enter your email"></form>',
+    check:d=>{let l=d.querySelector("label"),x=d.querySelector("input");return !!l&&!!x&&l.htmlFor==="email"&&x.type==="email"&&x.placeholder==="Enter your email"}
+  },
+  {
+    q:"Create the password field shown. It must use the password input type, have the placeholder shown and be required.",
+    target:'<form><label for="password">Password</label><input id="password" type="password" placeholder="Enter password" required></form>',
+    check:d=>{let x=d.querySelector("input");return !!x&&x.type==="password"&&x.placeholder==="Enter password"&&x.required&&d.querySelector("label")?.htmlFor==="password"}
+  },
+  {
+    q:"Create the number input shown. It should accept ages from 11 to 18, with a step of 1.",
+    target:'<form><label for="age">Age</label><input id="age" type="number" min="11" max="18" step="1"></form>',
+    check:d=>{let x=d.querySelector("input");return !!x&&x.type==="number"&&x.min==="11"&&x.max==="18"&&x.step==="1"&&d.querySelector("label")?.htmlFor==="age"}
+  },
+  {
+    q:"Create the three checkboxes shown. Students must be able to select more than one. Each checkbox needs the correct name and value.",
+    target:'<form><p>Subjects</p><label><input type="checkbox" name="subject" value="computing"> Computing</label><label><input type="checkbox" name="subject" value="maths"> Mathematics</label><label><input type="checkbox" name="subject" value="science"> Science</label></form>',
+    check:d=>{let x=d.querySelectorAll('input[type="checkbox"]');return x.length===3&&[...x].every(e=>e.name==="subject")&&[...x].map(e=>e.value).join("|")==="computing|maths|science"&&[...x].map(e=>e.parentElement.textContent.trim()).join("|")==="Computing|Mathematics|Science"}
+  },
+  {
+    q:"Create the two radio buttons shown. They must belong to the same group so that only one can be selected.",
+    target:'<form><p>Year group</p><label><input type="radio" name="year" value="10"> Year 10</label><label><input type="radio" name="year" value="11"> Year 11</label></form>',
+    check:d=>{let x=d.querySelectorAll('input[type="radio"]');return x.length===2&&x[0].name==="year"&&x[1].name==="year"&&x[0].value==="10"&&x[1].value==="11"}
+  },
+  {
+    q:"Create the subject dropdown shown. It must contain three options, with Computing selected by default.",
+    target:'<form><label for="subject">Subject</label><select id="subject" name="subject"><option selected>Computing</option><option>Mathematics</option><option>Science</option></select></form>',
+    check:d=>{let s=d.querySelector("select"),o=s?.querySelectorAll("option");return !!s&&s.id==="subject"&&s.name==="subject"&&o.length===3&&[...o].map(e=>e.textContent.trim()).join("|")==="Computing|Mathematics|Science"&&o[0].selected}
+  },
+  {
+    q:"Create the textarea shown. It must have 4 rows, 40 columns and the placeholder shown.",
+    target:'<form><label for="comments">Comments</label><textarea id="comments" rows="4" cols="40" placeholder="Enter your comments"></textarea></form>',
+    check:d=>{let x=d.querySelector("textarea");return !!x&&x.id==="comments"&&x.rows===4&&x.cols===40&&x.placeholder==="Enter your comments"&&d.querySelector("label")?.htmlFor==="comments"}
+  },
+  {
+    q:"Create the form controls shown: a submit button labelled “Submit” and a reset button labelled “Clear form”.",
+    target:'<form><button type="submit">Submit</button><button type="reset">Clear form</button></form>',
+    check:d=>{let s=d.querySelector('button[type="submit"]'),r=d.querySelector('button[type="reset"]');return !!s&&!!r&&s.textContent.trim()==="Submit"&&r.textContent.trim()==="Clear form"}
+  },
+  {
+    q:"Create the form shown. Give it the name “application”, method “post” and action “submit.html”. Include a required email field and a submit button.",
+    target:'<form name="application" method="post" action="submit.html"><label for="email">Email</label><input id="email" type="email" required><button type="submit">Apply</button></form>',
+    check:d=>{let f=d.querySelector("form"),x=f?.querySelector("input"),b=f?.querySelector('button[type="submit"]');return !!f&&f.name==="application"&&f.method.toLowerCase()==="post"&&f.action.endsWith("/submit.html")&&x?.type==="email"&&x.required&&b?.textContent.trim()==="Apply"}
+  },
+  {
+    q:"Group the personal details inside a fieldset with the legend “Personal details”. The group should contain a labelled name input and email input. Add a second fieldset with the legend “Preferences” containing a checkbox.",
+    target:'<form><fieldset><legend>Personal details</legend><label for="name">Name</label><input id="name" type="text"><label for="email">Email</label><input id="email" type="email"></fieldset><fieldset><legend>Preferences</legend><label><input type="checkbox" name="updates"> Receive updates</label></fieldset></form>',
+    check:d=>{let f=d.querySelector("form"),sets=d.querySelectorAll("fieldset");return !!f&&sets.length===2&&sets[0].querySelector("legend")?.textContent.trim()==="Personal details"&&sets[1].querySelector("legend")?.textContent.trim()==="Preferences"&&sets[0].querySelector("#name")?.type==="text"&&sets[0].querySelector("#email")?.type==="email"&&!!sets[1].querySelector('input[type="checkbox"]')}
+  },
+  {
+    q:"Final challenge: recreate the complete application form. It must use fieldsets and legends, labelled text/email/password/number inputs, a subject dropdown, radio buttons, multiple checkboxes, a textarea, and both Submit and Reset buttons. Required fields and the input attributes shown must also be included.",
+    target:'<form name="application" method="post" action="apply.html"><h2>Student Application</h2><fieldset><legend>Personal details</legend><label for="name">Full name</label><input id="name" name="name" type="text" required><label for="email">Email</label><input id="email" name="email" type="email" placeholder="name@example.com" required><label for="password">Password</label><input id="password" name="password" type="password" required><label for="age">Age</label><input id="age" name="age" type="number" min="11" max="18" step="1"></fieldset><fieldset><legend>Course choices</legend><label for="subject">Main subject</label><select id="subject" name="subject"><option selected>Computing</option><option>Mathematics</option><option>Science</option></select><p>Year group</p><label><input type="radio" name="year" value="10"> Year 10</label><label><input type="radio" name="year" value="11"> Year 11</label><p>Interests</p><label><input type="checkbox" name="interest" value="coding"> Coding</label><label><input type="checkbox" name="interest" value="web"> Web design</label></fieldset><fieldset><legend>Additional information</legend><label for="comments">Comments</label><textarea id="comments" name="comments" rows="4" cols="40" placeholder="Tell us about yourself"></textarea></fieldset><label><input type="checkbox" name="agree" required> I agree to the application conditions</label><button type="submit">Submit application</button><button type="reset">Reset form</button></form>',
+    check:d=>{let f=d.querySelector("form"),sets=d.querySelectorAll("fieldset"),name=f?.querySelector("#name"),email=f?.querySelector("#email"),pass=f?.querySelector("#password"),age=f?.querySelector("#age"),sel=f?.querySelector("#subject"),rad=f?.querySelectorAll('input[type="radio"][name="year"]'),checks=f?.querySelectorAll('input[type="checkbox"][name="interest"]'),comments=f?.querySelector("#comments"),submit=f?.querySelector('button[type="submit"]'),reset=f?.querySelector('button[type="reset"]');return !!f&&f.name==="application"&&f.method.toLowerCase()==="post"&&f.action.endsWith("/apply.html")&&sets.length===3&&sets[0].querySelector("legend")?.textContent.trim()==="Personal details"&&sets[1].querySelector("legend")?.textContent.trim()==="Course choices"&&sets[2].querySelector("legend")?.textContent.trim()==="Additional information"&&name?.type==="text"&&name.required&&email?.type==="email"&&email.required&&email.placeholder==="name@example.com"&&pass?.type==="password"&&pass.required&&age?.type==="number"&&age.min==="11"&&age.max==="18"&&age.step==="1"&&sel&&sel.querySelectorAll("option").length===3&&sel.querySelector("option").selected&&rad?.length===2&&rad[0].name==="year"&&rad[1].name==="year"&&checks?.length===2&&[...checks].every(x=>x.name==="interest")&&comments?.tagName==="TEXTAREA"&&comments.rows===4&&comments.cols===40&&!!f.querySelector('input[name="agree"][required]')&&!!submit&&!!reset}
+  }
+];
+
+let n=0;
+const editor=document.getElementById("editor");
+const preview=document.getElementById("preview");
+const target=document.getElementById("target");
+const feedback=document.getElementById("feedback");
+const revealBtn=document.getElementById("revealBtn");
+const revealedCode=document.getElementById("revealedCode");
+const targetRevealBtn=document.getElementById("targetRevealBtn");
+const targetCode=document.getElementById("targetCode");
+
+function load(){
+  document.getElementById("num").textContent=`Task ${n+1} of ${tasks.length}`;
+  document.getElementById("task").textContent=tasks[n].q;
+  editor.value="";
+  target.srcdoc=tasks[n].target;
+  feedback.className="feedback muted";
+  feedback.textContent="Type your HTML and click Run HTML to see the result.";
+  revealedCode.style.display="none";
+  revealedCode.textContent="";
+  revealBtn.textContent="Hold to reveal HTML";
+  targetCode.style.display="none";
+  targetCode.textContent="";
+  targetRevealBtn.textContent="Hold to reveal target HTML";
+  run();
+}
+function run(){
+  preview.srcdoc = editor.value;
+  feedback.className="feedback muted";
+  feedback.textContent="Live preview updated.";
+}
+function resetCode(){editor.value="";run()}
+function check(){
+  const code = editor.value.trim();
+
+  if(!code){
+    feedback.className="feedback bad";
+    feedback.textContent="✗ Enter some HTML first.";
+    return;
+  }
+
+  feedback.className="feedback muted";
+  feedback.textContent="Checking...";
+
+  try{
+    // Parse the student's HTML directly. This avoids iframe sandbox/origin
+    // restrictions while still checking the actual DOM structure.
+    const parsed = new DOMParser().parseFromString(code, "text/html");
+    const correct = tasks[n].check(parsed);
+
+    if(correct){
+      feedback.className="feedback good";
+      feedback.textContent="✓ Correct.";
+      if(n < tasks.length-1){
+        setTimeout(()=>{n++;load()},650);
+      }else{
+        feedback.textContent="✓ All 20 tasks completed!";
+      }
+    }else{
+      feedback.className="feedback bad";
+      feedback.textContent="✗ Not quite. Compare your live result with the target.";
+    }
+  }catch(e){
+    feedback.className="feedback bad";
+    feedback.textContent="✗ Your HTML could not be checked. Try again.";
+  }
+}
+let revealTimer=null;
+function showAnswer(){
+  revealedCode.textContent=editor.value || "(No HTML entered yet.)";
+  revealedCode.style.display="block";
+  revealBtn.textContent="Release to hide HTML";
+}
+function hideAnswer(){
+  revealedCode.style.display="none";
+  revealedCode.textContent="";
+  revealBtn.textContent="Hold to reveal HTML";
+  targetCode.style.display="none";
+  targetCode.textContent="";
+  targetRevealBtn.textContent="Hold to reveal target HTML";
+}
+revealBtn.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  revealBtn.setPointerCapture?.(e.pointerId);
+  showAnswer();
+});
+revealBtn.addEventListener("pointerup",e=>{
+  e.preventDefault();
+  hideAnswer();
+  try{revealBtn.releasePointerCapture(e.pointerId)}catch(_){}
+});
+revealBtn.addEventListener("pointercancel",hideAnswer);
+revealBtn.addEventListener("lostpointercapture",hideAnswer);
+revealBtn.addEventListener("contextmenu",e=>e.preventDefault());
+
+function showTargetAnswer(){
+  targetCode.textContent=tasks[n].target;
+  targetCode.style.display="block";
+  targetRevealBtn.textContent="Release to hide target HTML";
+}
+function hideTargetAnswer(){
+  targetCode.style.display="none";
+  targetCode.textContent="";
+  targetRevealBtn.textContent="Hold to reveal target HTML";
+}
+targetRevealBtn.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  targetRevealBtn.setPointerCapture?.(e.pointerId);
+  showTargetAnswer();
+});
+targetRevealBtn.addEventListener("pointerup",e=>{
+  e.preventDefault();
+  hideTargetAnswer();
+  try{targetRevealBtn.releasePointerCapture(e.pointerId)}catch(_){}
+});
+targetRevealBtn.addEventListener("pointercancel",hideTargetAnswer);
+targetRevealBtn.addEventListener("lostpointercapture",hideTargetAnswer);
+targetRevealBtn.addEventListener("contextmenu",e=>e.preventDefault());
+
+load();
+</script>
+</body>
+</html>
