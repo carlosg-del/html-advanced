@@ -173,8 +173,7 @@ function buildQuestionNav(){
     button.title = `Go to task ${index + 1}`;
     button.addEventListener("click", () => {
       n = index;
-      buildQuestionNav();
-load();
+      load();
     });
     questionNav.appendChild(button);
   });
@@ -301,6 +300,7 @@ targetRevealBtn.addEventListener("pointercancel",hideTargetAnswer);
 targetRevealBtn.addEventListener("lostpointercapture",hideTargetAnswer);
 targetRevealBtn.addEventListener("contextmenu",e=>e.preventDefault());
 
+buildQuestionNav();
 load();
 </script>
 </body>
